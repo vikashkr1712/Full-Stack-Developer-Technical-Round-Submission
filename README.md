@@ -51,7 +51,7 @@ Update `server/.env` if needed:
 
 ```bash
 PORT=5000
-MONGODB_URI=mongodb+srv://vikash:0123456789@cluster0.qn4eod8.mongodb.net/patientdb?retryWrites=true&w=majority&appName=Cluster0
+MONGODB_URI=mongodb+srv://<username>:<db_password>@cluster0.qn4eod8.mongodb.net/patientdb?retryWrites=true&w=majority&appName=Cluster0
 JWT_SECRET=patient_secret_key
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin12345
@@ -59,7 +59,7 @@ ADMIN_PASSWORD=admin12345
 
 Atlas note:
 
-- Replace `<db_password>` with your real MongoDB Atlas database user password.
+- Replace `<username>` and `<db_password>` with your real MongoDB Atlas database user credentials.
 - Ensure your Atlas user has read/write access to `patientdb`.
 - In Atlas Network Access, allow your current IP (or `0.0.0.0/0` for testing only).
 
@@ -110,4 +110,3 @@ Add your deployed frontend or full-stack URL here after hosting on Render, Verce
 - The project avoids extra advanced features to keep it simple and easy to present.
 
 
-# Full-Stack-Developer-Technical-Round-Submission
