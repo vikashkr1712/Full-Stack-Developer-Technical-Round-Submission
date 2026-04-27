@@ -102,7 +102,7 @@ npm run dev:client
 
 ## Live Deployment URL
 
-Add your deployed frontend or full-stack URL here after hosting on Render, Vercel, or Firebase.
+https://full-stack-developer-technical-roun.vercel.app/
 
 ## Notes
 
