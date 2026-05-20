@@ -7,7 +7,9 @@ const patientSchema = new mongoose.Schema(
     gender: { type: String, required: true },
     phone: { type: String, required: true },
     address: { type: String, required: true },
-    disease: { type: String, required: true }
+    disease: { type: String, required: true },
+    status: { type: String, enum: ['Stable', 'Critical'], default: 'Stable' },
+    problem: { type: String, trim: true }
   },
   { timestamps: true }
 );
