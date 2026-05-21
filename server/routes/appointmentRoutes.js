@@ -17,6 +17,13 @@ router.post('/', async (req, res) => {
   res.status(201).json(savedAppointment);
 });
 
+router.put('/:id', async (req, res) => {
+  const updatedAppointment = await Appointment.findByIdAndUpdate(req.params.id, req.body, {
+    new: true
+  });
+  res.json(updatedAppointment);
+});
+
 router.delete('/:id', async (req, res) => {
   await Appointment.findByIdAndDelete(req.params.id);
   res.json({ message: 'Appointment deleted successfully' });

@@ -6,6 +6,12 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('token'));
 
   useEffect(() => {
+    const handleExpired = () => setToken(null);
+    window.addEventListener('auth:expired', handleExpired);
+    return () => window.removeEventListener('auth:expired', handleExpired);
+  }, []);
+
+  useEffect(() => {
     if (token) {
       localStorage.setItem('token', token);
     } else {
@@ -13,8 +19,15 @@ export function AuthProvider({ children }) {
     }
   }, [token]);
 
-  const login = (newToken) => setToken(newToken);
-  const logout = () => setToken(null);
+  const login = (newToken) => {
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+  };
 
   return <AuthContext.Provider value={{ token, login, logout }}>{children}</AuthContext.Provider>;
 }

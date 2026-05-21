@@ -14,8 +14,8 @@ const navItems = [
   { label: 'Patients', icon: Users, to: '/patients' },
   { label: 'Appointments', icon: CalendarCheck, to: '/appointments' },
   { label: 'Doctors', icon: Stethoscope, to: '/doctors' },
-  { label: 'Reports', icon: BarChart3, to: '/dashboard' },
-  { label: 'Settings', icon: Settings, to: '/dashboard' }
+  { label: 'Reports', icon: BarChart3, to: '/reports' },
+  { label: 'Settings', icon: Settings, to: '/settings' }
 ];
 
 export default function Sidebar({ collapsed, onToggle }) {

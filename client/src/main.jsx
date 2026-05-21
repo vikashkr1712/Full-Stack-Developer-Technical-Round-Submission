@@ -5,6 +5,9 @@ import { Toaster } from 'sonner';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { AppointmentProvider } from './context/AppointmentContext';
+import { DoctorProvider } from './context/DoctorContext';
+import { SettingsProvider } from './context/SettingsContext';
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -12,8 +15,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 		<BrowserRouter>
 			<ThemeProvider>
 				<AuthProvider>
-					<App />
-					<Toaster richColors position="top-right" />
+					<AppointmentProvider>
+						<DoctorProvider>
+							<SettingsProvider>
+								<App />
+								<Toaster richColors position="top-right" />
+							</SettingsProvider>
+						</DoctorProvider>
+					</AppointmentProvider>
 				</AuthProvider>
 			</ThemeProvider>
 		</BrowserRouter>

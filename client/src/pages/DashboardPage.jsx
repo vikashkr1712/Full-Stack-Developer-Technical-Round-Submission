@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, HeartPulse, Users, UserCheck, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
-import { fetchAppointments, fetchPatients } from '../api';
+import { fetchPatients } from '../api';
+import { useAppointments } from '../context/AppointmentContext';
 import StatCard from '../components/dashboard/StatCard';
 import AgeBarChart from '../components/charts/AgeBarChart';
 import DiseaseBarChart from '../components/charts/DiseaseBarChart';
@@ -11,6 +12,8 @@ import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import Skeleton from '../components/ui/Skeleton';
 import { formatDate, getInitials } from '../utils/format';
+import { useNavigate } from 'react-router-dom';
+import { useDoctors } from '../context/DoctorContext';
 
 function isToday(dateString) {
   if (!dateString) return false;
@@ -27,13 +30,15 @@ export default function DashboardPage() {
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { doctors } = useDoctors();
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [patientData, appointmentData] = await Promise.all([fetchPatients(), fetchAppointments()]);
+      const patientData = await fetchPatients();
       setPatients(patientData);
-      setAppointments(appointmentData);
+      // appointments come from context
     } catch (error) {
       toast.error(error.message || 'Unable to load dashboard data.');
     } finally {
@@ -44,6 +49,12 @@ export default function DashboardPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const { appointments: ctxAppointments = [] } = useAppointments();
+
+  useEffect(() => {
+    setAppointments(ctxAppointments || []);
+  }, [ctxAppointments]);
 
   const stats = useMemo(() => {
     const totalPatients = patients.length;
@@ -139,6 +150,12 @@ export default function DashboardPage() {
           <div className="rounded-2xl bg-teal-500/10 px-4 py-3 text-xs font-semibold text-teal-700 dark:bg-teal-500/20 dark:text-teal-200">
             System status
             <p className="mt-1 text-lg font-bold">Stable</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => navigate('/patients')} className="rounded-2xl border px-3 py-2 text-sm">Add Patient</button>
+            <button onClick={() => navigate('/appointments')} className="rounded-2xl border px-3 py-2 text-sm">Book Appointment</button>
+            <button onClick={() => navigate('/doctors')} className="rounded-2xl border px-3 py-2 text-sm">Add Doctor</button>
+            <button onClick={() => navigate('/reports')} className="rounded-2xl border px-3 py-2 text-sm">Export Reports</button>
           </div>
         </div>
       </Card>
@@ -236,6 +253,48 @@ export default function DashboardPage() {
             ) : (
               <AgeBarChart data={ageChart} />
             )}
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Upcoming Appointments</h3>
+            <Badge label="Next 7 days" />
+          </div>
+          <div className="mt-4 grid gap-3">
+            {(appointments || []).slice(0, 6).map((a) => (
+              <div key={a._id || a.id} className="flex items-center justify-between rounded-2xl border p-3">
+                <div>
+                  <div className="font-semibold">{a.patientName} • {a.doctorName}</div>
+                  <div className="text-sm text-slate-500">{a.date} {a.time}</div>
+                </div>
+                <div>
+                  <Badge label={a.status || 'upcoming'} />
+                </div>
+              </div>
+            ))}
+            {(appointments || []).length === 0 && <div className="text-sm text-slate-500">No upcoming appointments.</div>}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Doctor Availability</h3>
+            <Badge label="On Duty" />
+          </div>
+          <div className="mt-4 grid gap-3">
+            {(doctors || []).map((d) => (
+              <div key={d.id || d._id} className="flex items-center justify-between rounded-2xl border p-3">
+                <div>
+                  <div className="font-semibold">{d.name}</div>
+                  <div className="text-sm text-slate-500">{d.specialization}</div>
+                </div>
+                <div className="text-sm text-slate-600">{d.availabilityTime}</div>
+              </div>
+            ))}
+            {(doctors || []).length === 0 && <div className="text-sm text-slate-500">No doctors available.</div>}
           </div>
         </Card>
       </div>

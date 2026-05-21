@@ -7,6 +7,8 @@ import DoctorListingPage from './pages/DoctorListingPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import PatientRegistrationPage from './pages/PatientRegistrationPage';
+import ReportsPage from './pages/ReportsPage';
+import SettingsPage from './pages/SettingsPage';
 
 export default function App() {
 	return (
@@ -49,6 +51,26 @@ export default function App() {
 					<ProtectedRoute>
 						<AppShell>
 							<AppointmentBookingPage />
+						</AppShell>
+					</ProtectedRoute>
+				}
+			/>
+			<Route
+				path="/reports"
+				element={
+					<ProtectedRoute>
+						<AppShell>
+							<ReportsPage />
+						</AppShell>
+					</ProtectedRoute>
+				}
+			/>
+			<Route
+				path="/settings"
+				element={
+					<ProtectedRoute>
+						<AppShell>
+							<SettingsPage />
 						</AppShell>
 					</ProtectedRoute>
 				}

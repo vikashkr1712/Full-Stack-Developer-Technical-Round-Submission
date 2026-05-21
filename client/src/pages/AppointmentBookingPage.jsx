@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Calendar, Clock, Stethoscope, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  createAppointment,
-  fetchDoctors,
-  fetchPatients
-} from '../api';
+import { fetchPatients } from '../api';
 import Card from '../components/ui/Card';
 import MotionButton from '../components/ui/MotionButton';
+import AppointmentModal from '../components/ui/AppointmentModal';
+import { useAppointments } from '../context/AppointmentContext';
+import { useDoctors } from '../context/DoctorContext';
 
 const initialForm = {
   patientName: '',
@@ -18,12 +17,14 @@ const initialForm = {
 
 export default function AppointmentBookingPage() {
   const [patients, setPatients] = useState([]);
-  const [doctors, setDoctors] = useState([]);
   const [formData, setFormData] = useState(initialForm);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const { appointments, addAppointment, updateAppointment, removeAppointment } = useAppointments();
+  const { doctors } = useDoctors();
 
   useEffect(() => {
     fetchPatients().then(setPatients);
-    fetchDoctors().then(setDoctors);
   }, []);
 
   const handleChange = (event) => {
@@ -32,9 +33,13 @@ export default function AppointmentBookingPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    await createAppointment(formData);
-    toast.success('Appointment booked successfully.');
-    setFormData(initialForm);
+    try {
+      await addAppointment(formData);
+      toast.success('Appointment booked successfully.');
+      setFormData(initialForm);
+    } catch (e) {
+      toast.error('Unable to book appointment');
+    }
   };
 
   return (
@@ -77,7 +82,7 @@ export default function AppointmentBookingPage() {
             >
               <option value="">Select doctor</option>
               {doctors.map((doctor) => (
-                <option key={doctor.id} value={doctor.name}>
+                <option key={doctor.id || doctor._id} value={doctor.name}>
                   {doctor.name}
                 </option>
               ))}
@@ -117,6 +122,45 @@ export default function AppointmentBookingPage() {
           </MotionButton>
         </form>
       </Card>
+
+      <Card>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Upcoming Appointments</h3>
+        </div>
+        <div className="mt-4 grid gap-3">
+          {appointments.length === 0 ? (
+            <div className="text-sm text-slate-500">No appointments yet.</div>
+          ) : (
+            appointments.map((a) => (
+              <div key={a._id || a.id} className="flex items-center justify-between rounded-2xl border p-3">
+                <div>
+                  <div className="font-semibold">{a.patientName} — {a.doctorName}</div>
+                  <div className="text-sm text-slate-500">{a.date} {a.time}</div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => { setModalOpen(true); setSelectedAppointment(a); }} className="rounded-2xl border px-3 py-1 text-sm font-medium">Edit</button>
+                  <button onClick={async () => {
+                    try {
+                      await updateAppointment(a._id || a.id, { status: 'completed' });
+                    } catch (e) {
+                      toast.error(e.message || 'Unable to update appointment');
+                    }
+                  }} className="rounded-2xl border px-3 py-1 text-sm font-medium">Complete</button>
+                  <button onClick={async () => {
+                    try {
+                      await updateAppointment(a._id || a.id, { status: 'cancelled' });
+                    } catch (e) {
+                      toast.error(e.message || 'Unable to update appointment');
+                    }
+                  }} className="rounded-2xl border px-3 py-1 text-sm font-medium text-rose-600">Cancel</button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
+
+      <AppointmentModal open={modalOpen} onClose={() => { setModalOpen(false); setSelectedAppointment(null); }} initial={selectedAppointment || {}} />
     </div>
   );
 }

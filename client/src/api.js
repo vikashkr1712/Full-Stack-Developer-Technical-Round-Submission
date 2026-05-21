@@ -6,6 +6,7 @@ function getAuthHeaders() {
 }
 
 async function request(path, options = {}) {
+  const hadToken = Boolean(localStorage.getItem('token'));
   const response = await fetch(`${API_URL}${path}`, {
     headers: {
       'Content-Type': 'application/json',
@@ -18,6 +19,14 @@ async function request(path, options = {}) {
   const data = await response.json();
 
   if (!response.ok) {
+    if (response.status === 401) {
+      if (hadToken) {
+        localStorage.removeItem('token');
+        window.dispatchEvent(new Event('auth:expired'));
+        throw new Error('Session expired. Please login again.');
+      }
+      throw new Error('Unauthorized');
+    }
     throw new Error(data.message || 'Something went wrong');
   }
 
@@ -57,6 +66,24 @@ export function fetchDoctors() {
   return request('/doctors');
 }
 
+export function createDoctor(doctor) {
+  return request('/doctors', {
+    method: 'POST',
+    body: JSON.stringify(doctor)
+  });
+}
+
+export function updateDoctor(id, doctor) {
+  return request(`/doctors/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(doctor)
+  });
+}
+
+export function deleteDoctor(id) {
+  return request(`/doctors/${id}`, { method: 'DELETE' });
+}
+
 export function fetchAppointments() {
   return request('/appointments');
 }
@@ -64,6 +91,13 @@ export function fetchAppointments() {
 export function createAppointment(appointment) {
   return request('/appointments', {
     method: 'POST',
+    body: JSON.stringify(appointment)
+  });
+}
+
+export function updateAppointment(id, appointment) {
+  return request(`/appointments/${id}`, {
+    method: 'PUT',
     body: JSON.stringify(appointment)
   });
 }
