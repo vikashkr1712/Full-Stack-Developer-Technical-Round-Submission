@@ -1,201 +1,220 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { BarChart3, Calendar, Download, FileText, Printer, User, Users } from 'lucide-react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
 import Card from '../components/ui/Card';
-import Badge from '../components/ui/Badge';
 import { fetchPatients } from '../api';
 import { useDoctors } from '../context/DoctorContext';
 import { useAppointments } from '../context/AppointmentContext';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area, CartesianGrid, Legend } from 'recharts';
 import { exportToCsv } from '../utils/export';
 
-const COLORS = ['#2563eb', '#14b8a6', '#f59e0b', '#ef4444', '#94a3b8'];
+const COLORS = ['#2f55e7', '#55bea8', '#f59e0b', '#ef4444', '#94a3b8'];
+
+function Stat({ icon: Icon, label, value, tone }) {
+  return (
+    <Card className="flex min-h-28 items-center gap-4 p-5">
+      <div className={`grid h-14 w-14 place-items-center rounded-full ${tone}`}><Icon size={24} /></div>
+      <div>
+        <p className="text-base font-medium text-[#5d6b86]">{label}</p>
+        <p className="mt-1 text-2xl font-extrabold">{value}</p>
+      </div>
+    </Card>
+  );
+}
+
+function ChartCard({ title, children, control }) {
+  return (
+    <Card className="min-w-0">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="text-lg font-extrabold">{title}</h3>
+        {control && <span className="rounded-xl border border-[#dfe6f2] px-3 py-2 text-sm font-bold text-[#34425f]">{control}</span>}
+      </div>
+      <div className="h-64 min-w-0">{children}</div>
+    </Card>
+  );
+}
 
 export default function ReportsPage() {
   const [patients, setPatients] = useState([]);
-  const { doctors } = useDoctors();
-  const { appointments } = useAppointments();
-  const [range, setRange] = useState('30'); // days
+  const [range, setRange] = useState('30');
+  const { doctors = [] } = useDoctors();
+  const { appointments = [] } = useAppointments();
 
   useEffect(() => {
-    fetchPatients().then(setPatients).catch(() => setPatients([]));
+    fetchPatients().then((data) => setPatients(Array.isArray(data) ? data : [])).catch(() => setPatients([]));
   }, []);
 
   const stats = useMemo(() => {
     const totalPatients = patients.length;
-    const avgAge = patients.length ? Math.round(patients.reduce((s, p) => s + (p.age || 0), 0) / patients.length) : 0;
-    const diseaseCounts = patients.reduce((acc, p) => {
-      const k = p.disease || 'Unknown';
-      acc[k] = (acc[k] || 0) + 1;
+    const avgAge = totalPatients ? Math.round(patients.reduce((sum, patient) => sum + (patient.age || 0), 0) / totalPatients) : 0;
+    const diseaseCounts = patients.reduce((acc, patient) => {
+      const key = patient.disease || 'Unknown';
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
     const mostCommonDisease = Object.entries(diseaseCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
-    const mostBookedDoctor = (appointments || []).reduce((acc, a) => {
-      acc[a.doctorName] = (acc[a.doctorName] || 0) + 1;
-      return acc;
-    }, {});
-    const topDoctor = Object.entries(mostBookedDoctor).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
-
-    return { totalPatients, avgAge, mostCommonDisease, topDoctor };
+    return { totalPatients, avgAge, mostCommonDisease, totalAppointments: appointments.length };
   }, [patients, appointments]);
 
   const growthSeries = useMemo(() => {
-    const days = parseInt(range, 10);
+    const days = Number(range);
     const map = {};
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const key = date.toISOString().slice(0, 10);
-      map[key] = 0;
+      map[date.toISOString().slice(0, 10)] = 0;
     }
-    patients.forEach((p) => {
-      const d = p.createdAt ? p.createdAt.slice(0, 10) : null;
-      if (d && map[d] !== undefined) map[d]++;
+    patients.forEach((patient) => {
+      const date = patient.createdAt?.slice(0, 10);
+      if (date && map[date] !== undefined) map[date] += 1;
     });
-    return Object.entries(map).map(([date, value]) => ({ date, value }));
+    return Object.entries(map).map(([date, value]) => ({ date: date.slice(5), value }));
   }, [patients, range]);
 
   const diseaseData = useMemo(() => {
-    const counts = patients.reduce((acc, p) => {
-      const k = p.disease || 'Unknown';
-      acc[k] = (acc[k] || 0) + 1;
+    const counts = patients.reduce((acc, patient) => {
+      const key = patient.disease || 'Unknown';
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+    return Object.entries(counts).map(([name, value]) => ({ name, value })).slice(0, 6);
   }, [patients]);
 
   const appointmentByStatus = useMemo(() => {
-    const s = (appointments || []).reduce((acc, a) => {
-      acc[a.status || 'upcoming'] = (acc[a.status || 'upcoming'] || 0) + 1;
+    const counts = (appointments || []).reduce((acc, appointment) => {
+      const key = appointment.status || 'upcoming';
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
-    return Object.entries(s).map(([name, value]) => ({ name, value }));
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [appointments]);
 
+  const doctorWorkload = useMemo(
+    () => doctors.map((doctor) => ({
+      name: doctor.name,
+      value: appointments.filter((appointment) => appointment.doctorName === doctor.name).length
+    })),
+    [doctors, appointments]
+  );
+
+  const genderData = useMemo(() => [
+    { name: 'Male', value: patients.filter((patient) => patient.gender === 'Male').length },
+    { name: 'Female', value: patients.filter((patient) => patient.gender === 'Female').length },
+    { name: 'Other', value: patients.filter((patient) => patient.gender === 'Other').length }
+  ], [patients]);
+
   const handleExportPatients = () => {
-    const rows = patients.map((p) => ({ Name: p.name, Age: p.age, Gender: p.gender, Disease: p.disease, Phone: p.phone }));
-    exportToCsv(rows, 'patients.csv');
+    exportToCsv(patients.map((patient) => ({
+      Name: patient.name,
+      Age: patient.age,
+      Gender: patient.gender,
+      Disease: patient.disease,
+      Phone: patient.phone
+    })), 'patients.csv');
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="grid gap-6">
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mx-auto grid max-w-[96rem] gap-5">
+      <div>
+        <h2 className="text-2xl font-extrabold sm:text-3xl">Reports</h2>
+        <p className="mt-2 text-base font-medium text-[#43516f]">Patient growth, disease trends and appointment analytics.</p>
+      </div>
+
       <Card>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Reports</p>
-            <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">Analytics & Exports</h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Patient growth, disease trends and appointment analytics.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <select value={range} onChange={(e) => setRange(e.target.value)} className="rounded-2xl border px-3 py-2">
+        <h3 className="text-xl font-extrabold">Analytics & Reports</h3>
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <label className="pm-field flex h-12 items-center gap-3 px-4">
+            <Calendar size={18} />
+            <select value={range} onChange={(event) => setRange(event.target.value)} className="min-w-0 flex-1 bg-transparent font-bold outline-none">
               <option value="7">7 days</option>
               <option value="30">30 days</option>
               <option value="90">90 days</option>
             </select>
-            <button onClick={handleExportPatients} className="rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Export Patients</button>
-            <button onClick={() => window.print()} className="rounded-2xl border px-4 py-2 text-sm">Print</button>
-          </div>
+          </label>
+          <button onClick={handleExportPatients} className="pm-blue-button h-12"><Download size={18} />Export Patients</button>
+          <button onClick={() => window.print()} className="h-12 rounded-xl border border-[#dfe6f2] bg-white font-extrabold"><Printer size={18} className="mr-2 inline" />Print Report</button>
         </div>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <p className="text-sm text-slate-500">Total patients</p>
-          <h3 className="text-2xl font-bold">{stats.totalPatients}</h3>
-        </Card>
-        <Card>
-          <p className="text-sm text-slate-500">Average age</p>
-          <h3 className="text-2xl font-bold">{stats.avgAge}</h3>
-        </Card>
-        <Card>
-          <p className="text-sm text-slate-500">Most common disease</p>
-          <h3 className="text-2xl font-bold">{stats.mostCommonDisease}</h3>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Stat icon={Users} label="Total patients" value={stats.totalPatients} tone="bg-[#eef2ff] text-[#2f55e7]" />
+        <Stat icon={User} label="Average age" value={stats.avgAge} tone="bg-[#e7faf5] text-[#00a778]" />
+        <Stat icon={FileText} label="Most common disease" value={stats.mostCommonDisease} tone="bg-[#fff4dc] text-[#f59e0b]" />
+        <Stat icon={BarChart3} label="Total appointments" value={stats.totalAppointments} tone="bg-[#ffecef] text-[#e11d48]" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card>
-          <p className="text-sm text-slate-500">Patient growth</p>
-          <div className="mt-3 h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={growthSeries}>
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                <YAxis />
-                <Tooltip
-                  formatter={(value) => [value, 'Patients Added']}
-                  labelFormatter={(label) => `Date: ${label}`}
-                />
-                <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <ChartCard title="Patient growth" control="By day">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={growthSeries} margin={{ left: 0, right: 8, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#dfe6f2" />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Line type="monotone" dataKey="value" stroke="#2f55e7" strokeWidth={3} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
 
-        <Card>
-          <p className="text-sm text-slate-500">Disease distribution</p>
-          <div className="mt-3 h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Tooltip formatter={(value) => [value, 'Patients']} />
-                <Pie data={diseaseData} dataKey="value" nameKey="name" outerRadius={80} fill="#8884d8" label>
-                  {diseaseData.map((entry, index) => (
-                    <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
+        <ChartCard title="Disease distribution" control="By disease">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Tooltip />
+              <Pie data={diseaseData.length ? diseaseData : [{ name: 'No data', value: 1 }]} dataKey="value" nameKey="name" outerRadius={72}>
+                {(diseaseData.length ? diseaseData : [{ name: 'No data' }]).map((entry, index) => <Cell key={entry.name} fill={diseaseData.length ? COLORS[index % COLORS.length] : '#cfd5df'} />)}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </ChartCard>
 
-        <Card>
-          <p className="text-sm text-slate-500">Appointment status</p>
-          <div className="mt-3 h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={appointmentByStatus}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value) => [value, 'Appointments']} />
-                <Bar dataKey="value" fill="#14b8a6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
+        <ChartCard title="Appointment status" control="By status">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={appointmentByStatus.length ? appointmentByStatus : [{ name: 'upcoming', value: 0 }]}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#dfe6f2" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Bar dataKey="value" fill="#55bea8" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard title="Doctor workload" control="By doctor">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={doctorWorkload.length ? doctorWorkload : [{ name: 'No data', value: 0 }]} margin={{ bottom: 12 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#dfe6f2" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} tickFormatter={(value) => String(value).slice(0, 14)} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Bar dataKey="value" fill="#2f55e7" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <p className="text-sm text-slate-500">Doctor workload</p>
-          <div className="mt-3 h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={(doctors || []).map((d) => ({ name: d.name, value: (appointments || []).filter((a) => a.doctorName === d.name).length }))}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis />
-                <Tooltip
-                  formatter={(value) => [value, 'Booked Appointments']}
-                  labelFormatter={(label) => `Doctor: ${label}`}
-                />
-                <Bar dataKey="value" fill="#2563eb" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card>
-          <p className="text-sm text-slate-500">Patients by gender</p>
-          <div className="mt-3 h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Tooltip formatter={(value) => [value, 'Patients']} />
-                <Pie data={[{ name: 'Male', value: patients.filter((p) => p.gender === 'Male').length }, { name: 'Female', value: patients.filter((p) => p.gender === 'Female').length }, { name: 'Other', value: patients.filter((p) => p.gender === 'Other').length }]} dataKey="value" nameKey="name" outerRadius={80}>
-                  <Cell fill="#2563eb" />
-                  <Cell fill="#14b8a6" />
-                  <Cell fill="#94a3b8" />
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
+      <ChartCard title="Patients by gender" control="By gender">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Tooltip />
+            <Pie data={genderData.some((item) => item.value) ? genderData : [{ name: 'No data', value: 1 }]} dataKey="value" nameKey="name" outerRadius={78}>
+              {(genderData.some((item) => item.value) ? genderData : [{ name: 'No data' }]).map((entry, index) => <Cell key={entry.name} fill={genderData.some((item) => item.value) ? COLORS[index % COLORS.length] : '#cfd5df'} />)}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      </ChartCard>
     </motion.div>
   );
 }

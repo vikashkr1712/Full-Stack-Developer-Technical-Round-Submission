@@ -1,84 +1,111 @@
 import { NavLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   BarChart3,
   CalendarCheck,
+  ChevronLeft,
+  LogOut,
   LayoutDashboard,
   Settings,
   Stethoscope,
   Users
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
-const navItems = [
+export const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
   { label: 'Patients', icon: Users, to: '/patients' },
   { label: 'Appointments', icon: CalendarCheck, to: '/appointments' },
   { label: 'Doctors', icon: Stethoscope, to: '/doctors' },
-  { label: 'Reports', icon: BarChart3, to: '/reports' },
-  { label: 'Settings', icon: Settings, to: '/settings' }
+  { label: 'Reports', icon: BarChart3, to: '/reports' }
 ];
 
-export default function Sidebar({ collapsed, onToggle }) {
+export const sideItems = [...navItems, { label: 'Settings', icon: Settings, to: '/settings' }];
+
+export default function Sidebar({ open, onToggle }) {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <aside
-      className={`no-print sticky top-0 hidden h-screen flex-col gap-6 border-r border-slate-200 bg-white/80 px-4 py-6 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/60 lg:flex ${
-        collapsed ? 'w-24' : 'w-72'
+      className={`no-print fixed left-0 top-0 z-50 flex h-dvh w-[82vw] max-w-[20rem] flex-col border-r border-[#dfe6f2] bg-white/95 px-4 py-7 shadow-2xl backdrop-blur-xl transition-transform duration-300 lg:sticky lg:w-[18.5rem] lg:max-w-none lg:translate-x-0 lg:shadow-none ${
+        open ? 'translate-x-0' : '-translate-x-full'
       }`}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-2xl bg-brand-600 text-white shadow-soft">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#2f55e7] text-white shadow-soft">
             <Stethoscope size={20} />
           </div>
-          {!collapsed && (
-            <div>
-              <p className="text-sm font-semibold text-slate-500">Healthcare Suite</p>
-              <p className="text-lg font-bold text-slate-900 dark:text-white">Patient Hub</p>
-            </div>
-          )}
+          <div className="min-w-0">
+            <p className="text-[0.8rem] font-semibold leading-tight text-[#5d6b86]">Healthcare Suite</p>
+            <p className="text-lg font-extrabold leading-tight text-[#081126]">Patient Hub</p>
+          </div>
         </div>
         <button
           onClick={onToggle}
-          className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900"
+          className="pm-icon-button h-10 w-10 shrink-0"
           aria-label="Toggle sidebar"
         >
-          <span className="text-lg">{collapsed ? '>' : '<'}</span>
+          <ChevronLeft size={18} />
         </button>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-2">
-        {navItems.map(({ label, icon: Icon, to }) => (
+      <nav className="mt-10 flex flex-1 flex-col gap-3">
+        {sideItems.map(({ label, icon: Icon, to }) => (
           <NavLink
             key={label}
             to={to}
+            onClick={() => {
+              if (window.innerWidth < 1024) {
+                onToggle();
+              }
+            }}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition ${
+              `flex items-center gap-4 rounded-xl px-4 py-3.5 text-[0.95rem] font-bold transition ${
                 isActive
-                  ? 'bg-brand-600 text-white shadow-soft'
-                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'
+                  ? 'bg-[#2f55e7] text-white shadow-[0_12px_24px_rgba(47,85,231,0.28)]'
+                  : 'text-[#34425f] hover:bg-[#f3f6ff]'
               }`
             }
           >
-            <Icon size={18} />
-            {!collapsed && <span>{label}</span>}
+            <Icon size={19} />
+            <span>{label}</span>
           </NavLink>
         ))}
       </nav>
 
-      {!collapsed && (
-        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-brand-50 to-teal-50 p-4 text-sm text-slate-600 shadow-soft dark:border-slate-800 dark:from-slate-900 dark:to-slate-900 dark:text-slate-300">
-          <p className="font-semibold text-slate-900 dark:text-white">Need a report?</p>
-          <p className="mt-1 text-xs leading-relaxed">
-            Generate clinical summaries and patient analytics in one click.
-          </p>
-          <button
-            onClick={() => toast.info('Insights export will be available in the Reports module.')}
-            className="mt-3 w-full rounded-xl bg-brand-600 py-2 text-xs font-semibold text-white"
-          >
-            Export Insights
-          </button>
+      <div className="hidden rounded-xl border border-[#dfe6f2] bg-[#f6f9ff] p-5 text-sm text-[#43516f] shadow-soft sm:block">
+        <p className="font-extrabold text-[#081126]">Need a report?</p>
+        <p className="mt-2 text-[0.82rem] leading-relaxed">
+          Generate clinical summaries and patient analytics in one click.
+        </p>
+        <button
+          onClick={() => toast.info('Insights export will be available in the Reports module.')}
+          className="pm-blue-button mt-4 h-10 w-full text-sm"
+        >
+          Export Insights
+        </button>
+        <div className="mt-5 h-24 rounded-lg bg-[linear-gradient(to_top,rgba(47,85,231,0.12)_0_45%,transparent_45%),linear-gradient(135deg,transparent_0_70%,rgba(47,85,231,0.18)_70%)]">
+          <svg viewBox="0 0 220 92" className="h-full w-full" aria-hidden="true">
+            <path d="M12 74 L52 58 L82 42 L113 51 L146 31 L176 18 L206 6" fill="none" stroke="#2f55e7" strokeWidth="3" />
+            {[12, 52, 82, 113, 146, 176, 206].map((x, i) => (
+              <circle key={x} cx={x} cy={[74, 58, 42, 51, 31, 18, 6][i]} r="4" fill="#fff" stroke="#2f55e7" strokeWidth="3" />
+            ))}
+          </svg>
         </div>
-      )}
+      </div>
+
+      <button onClick={handleLogout} className="mt-4 flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-red-600 transition hover:bg-red-50 lg:hidden">
+        <LogOut size={20} />
+        Logout
+      </button>
     </aside>
   );
 }

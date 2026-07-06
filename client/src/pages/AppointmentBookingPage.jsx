@@ -1,166 +1,117 @@
-import { useEffect, useState } from 'react';
-import { Calendar, Clock, Stethoscope, UserRound } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, CalendarCheck, CheckCircle2, PlusCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { fetchPatients } from '../api';
 import Card from '../components/ui/Card';
-import MotionButton from '../components/ui/MotionButton';
+import Badge from '../components/ui/Badge';
 import AppointmentModal from '../components/ui/AppointmentModal';
 import { useAppointments } from '../context/AppointmentContext';
-import { useDoctors } from '../context/DoctorContext';
-
-const initialForm = {
-  patientName: '',
-  doctorName: '',
-  date: '',
-  time: ''
-};
 
 export default function AppointmentBookingPage() {
-  const [patients, setPatients] = useState([]);
-  const [formData, setFormData] = useState(initialForm);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const { appointments, addAppointment, updateAppointment, removeAppointment } = useAppointments();
-  const { doctors } = useDoctors();
+  const { appointments = [], updateAppointment } = useAppointments();
 
-  useEffect(() => {
-    fetchPatients().then(setPatients);
-  }, []);
-
-  const handleChange = (event) => {
-    setFormData({ ...formData, [event.target.name]: event.target.value });
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    try {
-      await addAppointment(formData);
-      toast.success('Appointment booked successfully.');
-      setFormData(initialForm);
-    } catch (e) {
-      toast.error('Unable to book appointment');
-    }
+  const openBook = () => {
+    setSelectedAppointment(null);
+    setModalOpen(true);
   };
 
   return (
-    <div className="grid gap-6">
-      <Card>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Appointments</p>
-        <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">Book an Appointment</h2>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-          Coordinate consultations with available doctors and patients.
-        </p>
-      </Card>
-
-      <Card className="max-w-3xl">
-        <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
-          <div className="floating-input">
-            <select
-              className="peer"
-              name="patientName"
-              value={formData.patientName}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Select patient</option>
-              {patients.map((patient) => (
-                <option key={patient._id} value={patient.name}>
-                  {patient.name}
-                </option>
-              ))}
-            </select>
-            <UserRound className="pointer-events-none absolute right-4 top-3 text-slate-400" size={16} />
-            <label>Patient</label>
-          </div>
-          <div className="floating-input">
-            <select
-              className="peer"
-              name="doctorName"
-              value={formData.doctorName}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Select doctor</option>
-              {doctors.map((doctor) => (
-                <option key={doctor.id || doctor._id} value={doctor.name}>
-                  {doctor.name}
-                </option>
-              ))}
-            </select>
-            <Stethoscope className="pointer-events-none absolute right-4 top-3 text-slate-400" size={16} />
-            <label>Doctor</label>
-          </div>
-          <div className="floating-input">
-            <input
-              className="peer"
-              name="date"
-              type="date"
-              value={formData.date}
-              onChange={handleChange}
-              required
-            />
-            <Calendar className="pointer-events-none absolute right-4 top-3 text-slate-400" size={16} />
-            <label>Date</label>
-          </div>
-          <div className="floating-input">
-            <input
-              className="peer"
-              name="time"
-              type="time"
-              value={formData.time}
-              onChange={handleChange}
-              required
-            />
-            <Clock className="pointer-events-none absolute right-4 top-3 text-slate-400" size={16} />
-            <label>Time</label>
-          </div>
-          <MotionButton
-            className="mt-2 h-12 rounded-2xl bg-brand-600 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 md:col-span-2"
-            type="submit"
-          >
-            Book Appointment
-          </MotionButton>
-        </form>
-      </Card>
-
-      <Card>
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Upcoming Appointments</h3>
+    <div className="mx-auto grid max-w-[96rem] gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-extrabold sm:text-3xl">Appointments</h2>
+          <p className="mt-2 text-base font-medium text-[#43516f]">Manage and schedule patient appointments.</p>
         </div>
-        <div className="mt-4 grid gap-3">
+        <button onClick={openBook} className="pm-blue-button h-12 px-5 text-base">
+          <PlusCircle size={18} />
+          Book Appointment
+        </button>
+      </div>
+
+      <Card className="overflow-hidden">
+        <h3 className="text-xl font-extrabold">Upcoming Appointments</h3>
+        <div className="mt-5 grid gap-4">
           {appointments.length === 0 ? (
-            <div className="text-sm text-slate-500">No appointments yet.</div>
+            <div className="rounded-xl border border-dashed border-[#dfe6f2] p-6 text-sm font-semibold text-[#5d6b86]">
+              No appointments yet.
+            </div>
           ) : (
-            appointments.map((a) => (
-              <div key={a._id || a.id} className="flex items-center justify-between rounded-2xl border p-3">
-                <div>
-                  <div className="font-semibold">{a.patientName} — {a.doctorName}</div>
-                  <div className="text-sm text-slate-500">{a.date} {a.time}</div>
+            appointments.map((appointment) => (
+              <div
+                key={appointment._id || appointment.id}
+                className="grid gap-4 rounded-xl border border-[#dfe6f2] bg-white/75 p-4 md:grid-cols-[1fr_auto]"
+              >
+                <div className="min-w-0">
+                  <p className="break-words text-lg font-extrabold">
+                    {appointment.patientName} <span className="text-[#5d6b86]">—</span> {appointment.doctorName}
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-[#43516f]">{appointment.date} {appointment.time}</p>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => { setModalOpen(true); setSelectedAppointment(a); }} className="rounded-2xl border px-3 py-1 text-sm font-medium">Edit</button>
-                  <button onClick={async () => {
-                    try {
-                      await updateAppointment(a._id || a.id, { status: 'completed' });
-                    } catch (e) {
-                      toast.error(e.message || 'Unable to update appointment');
-                    }
-                  }} className="rounded-2xl border px-3 py-1 text-sm font-medium">Complete</button>
-                  <button onClick={async () => {
-                    try {
-                      await updateAppointment(a._id || a.id, { status: 'cancelled' });
-                    } catch (e) {
-                      toast.error(e.message || 'Unable to update appointment');
-                    }
-                  }} className="rounded-2xl border px-3 py-1 text-sm font-medium text-rose-600">Cancel</button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge label={appointment.status || 'Upcoming'} tone={appointment.status === 'cancelled' ? 'danger' : 'success'} />
+                  <button
+                    onClick={() => { setSelectedAppointment(appointment); setModalOpen(true); }}
+                    className="h-10 rounded-xl border border-[#dfe6f2] px-4 text-sm font-extrabold"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await updateAppointment(appointment._id || appointment.id, { ...appointment, status: 'completed' });
+                      } catch (e) {
+                        toast.error(e.message || 'Unable to update appointment');
+                      }
+                    }}
+                    className="h-10 rounded-xl border border-[#dfe6f2] px-4 text-sm font-extrabold"
+                  >
+                    Complete
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await updateAppointment(appointment._id || appointment.id, { ...appointment, status: 'cancelled' });
+                      } catch (e) {
+                        toast.error(e.message || 'Unable to update appointment');
+                      }
+                    }}
+                    className="h-10 rounded-xl border border-red-200 px-4 text-sm font-extrabold text-red-600"
+                  >
+                    Cancel
+                  </button>
+                  <ArrowRight size={18} className="hidden text-[#5d6b86] lg:block" />
                 </div>
               </div>
             ))
           )}
         </div>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm font-medium text-[#43516f]">
+          <p>Showing 1 - {Math.min(appointments.length, 6)} of {appointments.length || 0} records</p>
+          <div className="flex items-center gap-3">
+            <button className="rounded-xl border border-[#dfe6f2] px-4 py-2 font-bold opacity-40">Prev</button>
+            <span>Page 1 of 1</span>
+            <button className="rounded-xl border border-[#dfe6f2] px-4 py-2 font-bold">Next</button>
+          </div>
+        </div>
       </Card>
 
-      <AppointmentModal open={modalOpen} onClose={() => { setModalOpen(false); setSelectedAppointment(null); }} initial={selectedAppointment || {}} />
+      <Card className="grid gap-4 md:hidden">
+        <div className="flex items-center gap-4 rounded-xl border border-[#dfe6f2] p-4">
+          <div className="grid h-14 w-14 place-items-center rounded-xl bg-[#eef2ff] text-[#2f55e7]"><CalendarCheck size={27} /></div>
+          <div><p className="text-lg font-extrabold">Easy Scheduling</p><p className="font-medium text-[#5d6b86]">Choose your preferred date and time</p></div>
+        </div>
+        <div className="flex items-center gap-4 rounded-xl border border-[#dfe6f2] p-4">
+          <div className="grid h-14 w-14 place-items-center rounded-xl bg-[#e7faf5] text-[#00a778]"><CheckCircle2 size={27} /></div>
+          <div><p className="text-lg font-extrabold">Expert Doctors</p><p className="font-medium text-[#5d6b86]">Connect with qualified specialists</p></div>
+        </div>
+      </Card>
+
+      <AppointmentModal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setSelectedAppointment(null); }}
+        initial={selectedAppointment || {}}
+      />
     </div>
   );
 }
