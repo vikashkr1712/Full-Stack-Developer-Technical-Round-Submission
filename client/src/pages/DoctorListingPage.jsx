@@ -62,7 +62,7 @@ export default function DoctorListingPage() {
           </div>
           <button
             onClick={() => { setSelectedDoctor(null); setModalOpen(true); }}
-            className="pm-blue-button hidden h-12 px-5 sm:flex"
+            className="doctor-add-desktop pm-blue-button h-12 px-5"
           >
             <PlusCircle size={18} />
             Add Doctor
@@ -80,7 +80,7 @@ export default function DoctorListingPage() {
           </label>
           <button
             onClick={() => { setSelectedDoctor(null); setModalOpen(true); }}
-            className="pm-blue-button h-12 w-full sm:hidden"
+            className="doctor-add-mobile pm-blue-button h-12 w-full"
           >
             <PlusCircle size={18} />
             Add Doctor

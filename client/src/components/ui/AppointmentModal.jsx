@@ -18,9 +18,43 @@ const schema = z.object({
   notes: z.string().optional()
 });
 
-function Field({ icon: Icon, label, children, rightIcon = true }) {
+const TIME_OPTIONS = [
+  '08:00 AM',
+  '08:30 AM',
+  '09:00 AM',
+  '09:30 AM',
+  '10:00 AM',
+  '10:30 AM',
+  '11:00 AM',
+  '11:30 AM',
+  '12:00 PM',
+  '12:30 PM',
+  '01:00 PM',
+  '01:30 PM',
+  '02:00 PM',
+  '02:30 PM',
+  '03:00 PM',
+  '03:30 PM',
+  '04:00 PM',
+  '04:30 PM',
+  '05:00 PM',
+  '05:30 PM',
+  '06:00 PM',
+  '06:30 PM',
+  '07:00 PM',
+  '07:30 PM',
+  '08:00 PM'
+];
+
+const TIME_GROUPS = [
+  { label: 'Morning', slots: TIME_OPTIONS.slice(0, 8) },
+  { label: 'Afternoon', slots: TIME_OPTIONS.slice(8, 18) },
+  { label: 'Evening', slots: TIME_OPTIONS.slice(18) }
+];
+
+function Field({ icon: Icon, label, children, rightIcon = true, className = '' }) {
   return (
-    <label className="pm-field flex min-h-16 items-center gap-3 px-4 py-2">
+    <label className={`pm-field flex min-h-16 items-center gap-3 px-4 py-2 ${className}`}>
       <Icon size={21} className="shrink-0 text-[#7c89a2]" />
       <span className="min-w-0 flex-1">
         <span className="block text-xs font-semibold text-[#65728e]">{label}</span>
@@ -35,8 +69,9 @@ export default function AppointmentModal({ open, onClose, initial = {} }) {
   const { addAppointment, updateAppointment } = useAppointments();
   const { doctors } = useDoctors();
   const [patients, setPatients] = useState([]);
+  const [timeOpen, setTimeOpen] = useState(false);
   const isEditing = Boolean(initial && (initial._id || initial.id));
-  const { register, handleSubmit, reset, formState } = useForm({
+  const { register, handleSubmit, reset, formState, watch, setValue } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
       patientName: '',
@@ -48,6 +83,7 @@ export default function AppointmentModal({ open, onClose, initial = {} }) {
       notes: ''
     }
   });
+  const selectedTime = watch('time');
 
   useEffect(() => {
     if (open) {
@@ -86,6 +122,11 @@ export default function AppointmentModal({ open, onClose, initial = {} }) {
     } catch (e) {
       toast.error(e.message || 'Unable to save appointment');
     }
+  };
+
+  const chooseTime = (time) => {
+    setValue('time', time, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+    setTimeOpen(false);
   };
 
   if (!open) return null;
@@ -131,9 +172,59 @@ export default function AppointmentModal({ open, onClose, initial = {} }) {
           <Field icon={Calendar} label="Date" rightIcon={false}>
             <input type="date" {...register('date')} className="w-full bg-transparent text-base font-semibold outline-none" />
           </Field>
-          <Field icon={Clock} label="Time">
-            <input type="time" {...register('time')} className="w-full bg-transparent text-base font-semibold outline-none" />
-          </Field>
+          <div className="relative">
+            <input type="hidden" {...register('time')} />
+            <button
+              type="button"
+              onClick={() => setTimeOpen((value) => !value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') setTimeOpen(false);
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setTimeOpen((value) => !value);
+                }
+              }}
+              className={`pm-field pm-time-trigger flex min-h-16 w-full items-center gap-3 px-4 py-2 text-left ${timeOpen ? 'pm-time-trigger-open' : ''}`}
+              aria-haspopup="listbox"
+              aria-expanded={timeOpen}
+            >
+              <Clock size={21} className="shrink-0 text-[#7c89a2]" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs font-semibold text-[#65728e]">Time</span>
+                <span className={`block text-base font-semibold ${selectedTime ? 'text-[#081126]' : 'text-[#65728e]'}`}>
+                  {selectedTime || 'Select time'}
+                </span>
+              </span>
+              <ChevronDown size={19} className={`shrink-0 text-[#34425f] transition ${timeOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {timeOpen && (
+              <div className="pm-time-panel absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 rounded-2xl border border-[#dfe6f2] bg-white p-3 shadow-[0_20px_45px_rgba(35,55,95,0.18)]" role="listbox" aria-label="Appointment time">
+                {TIME_GROUPS.map((group) => (
+                  <div key={group.label} className="pm-time-group">
+                    <p className="px-1 pb-2 text-[0.7rem] font-extrabold uppercase tracking-[0.16em] text-[#65728e]">{group.label}</p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {group.slots.map((time) => {
+                        const active = selectedTime === time;
+                        return (
+                          <button
+                            type="button"
+                            key={time}
+                            onClick={() => chooseTime(time)}
+                            className={`pm-time-option ${active ? 'pm-time-option-active' : ''}`}
+                            role="option"
+                            aria-selected={active}
+                          >
+                            <span>{time.replace(' ', '')}</span>
+                            {active && <Check size={15} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <Field icon={ListChecks} label="Appointment Type">
             <select {...register('appointmentType')} className="w-full bg-transparent text-base font-semibold outline-none">
               <option>Consultation</option>

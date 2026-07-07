@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -122,6 +122,7 @@ export default function PatientRegistrationPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState('');
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [heroVisible, setHeroVisible] = useState(true);
   const [search, setSearch] = useState('');
   const [genderFilter, setGenderFilter] = useState('all');
   const [diseaseFilter, setDiseaseFilter] = useState('all');
@@ -133,6 +134,7 @@ export default function PatientRegistrationPage() {
     resolver: zodResolver(patientSchema),
     defaultValues
   });
+  const heroRef = useRef(null);
   const selectedDisease = useWatch({ control, name: 'disease' });
 
   const loadPatients = async () => {
@@ -147,6 +149,18 @@ export default function PatientRegistrationPage() {
   };
 
   useEffect(() => { loadPatients(); }, []);
+
+  useEffect(() => {
+    const node = heroRef.current;
+    if (!node) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeroVisible(entry.isIntersecting),
+      { threshold: 0.08 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   const openCreate = () => {
     reset(defaultValues);
@@ -252,21 +266,23 @@ export default function PatientRegistrationPage() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mx-auto grid max-w-[96rem] gap-5">
-      <Card className="flex items-center justify-between gap-4 p-5 sm:p-6">
-        <div className="flex min-w-0 items-center gap-4">
-          <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#2f55e7] text-white">
-            <UserPlus size={32} />
+      <div ref={heroRef}>
+        <Card className="patient-hero-card flex items-center justify-between gap-4 p-5 sm:p-6">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#2f55e7] text-white">
+              <UserPlus size={32} />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold">Add New Patient</h2>
+              <p className="mt-1 max-w-md text-sm font-medium leading-6 text-[#43516f]">Register a new patient and start managing their care.</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-extrabold">Add New Patient</h2>
-            <p className="mt-1 max-w-md text-sm font-medium leading-6 text-[#43516f]">Register a new patient and start managing their care.</p>
-          </div>
-        </div>
-        <button onClick={openCreate} className="pm-blue-button h-11 shrink-0 px-5">
-          <PlusCircle size={17} />
-          <span className="hidden sm:inline">Add Patient</span>
-        </button>
-      </Card>
+          <button onClick={openCreate} className="patient-hero-button pm-blue-button h-11 shrink-0 px-5">
+            <PlusCircle size={17} />
+            <span className="hidden sm:inline">Add Patient</span>
+          </button>
+        </Card>
+      </div>
 
       <Card>
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -343,7 +359,13 @@ export default function PatientRegistrationPage() {
         </div>
       </Card>
 
-      <button onClick={openCreate} className="pm-blue-button fixed bottom-[6.5rem] right-5 z-30 h-14 w-14 rounded-full p-0 shadow-2xl lg:hidden" aria-label="Add patient"><Plus size={30} /></button>
+      <button
+        onClick={openCreate}
+        className={`patient-floating-add pm-blue-button ${heroVisible ? 'patient-floating-hidden' : ''}`}
+        aria-label="Add patient"
+      >
+        <Plus size={22} />
+      </button>
 
       <PatientFormModal open={formOpen} editingId={editingId} register={register} handleSubmit={handleSubmit} errors={errors} isSubmitting={isSubmitting} onSubmit={onSubmit} onClose={() => setFormOpen(false)} selectedDisease={selectedDisease} />
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import Modal from './Modal';
+import { Clock, Mail, Phone, Save, Stethoscope, Upload, UserRound, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -110,54 +111,94 @@ export default function DoctorModal({ open, onClose, initial = null }) {
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3">
-        <div className="floating-input">
-          <input placeholder=" " {...register('name')} className="peer" />
-          <label>Full name</label>
-        </div>
-        <div className="floating-input">
-          <select {...register('specialization')} className="peer" defaultValue="">
-            <option value="" disabled>Select specialization</option>
-            {SPECIALIZATIONS.map((item) => (
-              <option key={item} value={item}>{item}</option>
-            ))}
-          </select>
-          <label>Specialization</label>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="floating-input">
-            <select {...register('availabilityStart')} className="peer" defaultValue="">
-              <option value="" disabled>Start time</option>
-              {TIME_OPTIONS.map((item) => (
-                <option key={item} value={item}>{item}</option>
-              ))}
-            </select>
-            <label>Available from</label>
+    <Modal open={open} onClose={onClose} showClose={false} className="doctor-modal-shell max-w-3xl p-0">
+      <form onSubmit={handleSubmit(onSubmit)} className="doctor-form">
+        <div className="doctor-form-header">
+          <div>
+            <p className="doctor-form-kicker">Medical staff</p>
+            <h3>{initial ? 'Edit Doctor' : 'Add Doctor'}</h3>
+            <p>Manage specialist details, contact information, and availability hours.</p>
           </div>
-          <div className="floating-input">
-            <select {...register('availabilityEnd')} className="peer" defaultValue="">
-              <option value="" disabled>End time</option>
-              {TIME_OPTIONS.map((item) => (
-                <option key={item} value={item}>{item}</option>
-              ))}
-            </select>
-            <label>Available to</label>
-          </div>
+          <button type="button" onClick={onClose} className="pm-icon-button h-12 w-12 shrink-0" aria-label="Close">
+            <X size={22} />
+          </button>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="floating-input">
-            <input placeholder=" " {...register('contact')} className="peer" />
-            <label>Contact number</label>
-          </div>
-          <div className="floating-input">
-            <input placeholder=" " {...register('email')} className="peer" />
-            <label>Email</label>
-          </div>
+
+        <div className="doctor-form-body">
+          <section className="doctor-photo-panel" aria-label="Doctor profile photo">
+            <div className="doctor-avatar-preview">
+              <Stethoscope size={34} />
+            </div>
+            <div className="min-w-0">
+              <p className="font-extrabold text-[#081126]">Profile photo</p>
+              <p className="mt-1 text-sm font-medium leading-6 text-[#5d6b86]">Add a clear professional photo after saving the doctor profile.</p>
+            </div>
+            <button type="button" className="doctor-upload-button">
+              <Upload size={17} />
+              Upload photo
+            </button>
+          </section>
+
+          <section className="doctor-fields">
+            <label className="doctor-field">
+              <span><UserRound size={18} /> Full name</span>
+              <input placeholder="Dr. Priya Sharma" {...register('name')} />
+            </label>
+
+            <label className="doctor-field">
+              <span><Stethoscope size={18} /> Specialization</span>
+              <select {...register('specialization')} defaultValue="">
+                <option value="" disabled>Select specialization</option>
+                {SPECIALIZATIONS.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+
+            <div className="doctor-time-grid">
+              <label className="doctor-field">
+                <span><Clock size={18} /> Available from</span>
+                <select {...register('availabilityStart')} defaultValue="">
+                  <option value="" disabled>Start time</option>
+                  {TIME_OPTIONS.map((item) => (
+                    <option key={item} value={item}>{item}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="doctor-field">
+                <span><Clock size={18} /> Available to</span>
+                <select {...register('availabilityEnd')} defaultValue="">
+                  <option value="" disabled>End time</option>
+                  {TIME_OPTIONS.map((item) => (
+                    <option key={item} value={item}>{item}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="doctor-time-grid">
+              <label className="doctor-field">
+                <span><Phone size={18} /> Contact number</span>
+                <input placeholder="+91 98765 43210" {...register('contact')} />
+              </label>
+              <label className="doctor-field">
+                <span><Mail size={18} /> Email</span>
+                <input placeholder="doctor@example.com" {...register('email')} />
+              </label>
+            </div>
+          </section>
         </div>
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-2xl border px-4 py-2 text-sm font-semibold text-slate-600">Cancel</button>
-          <button type="submit" disabled={formState.isSubmitting} className="rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Save</button>
+
+        {Object.keys(formState.errors).length > 0 && (
+          <p className="doctor-form-error">Please enter doctor name, specialization, and a valid availability window.</p>
+        )}
+
+        <div className="doctor-form-actions">
+          <button type="button" onClick={onClose} className="doctor-secondary-button">Cancel</button>
+          <button type="submit" disabled={formState.isSubmitting} className="pm-blue-button doctor-primary-button">
+            <Save size={18} />
+            Save doctor
+          </button>
         </div>
       </form>
     </Modal>
